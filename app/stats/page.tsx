@@ -235,6 +235,26 @@ export default function StatsPage() {
             </span>
           )}
           <button
+            onClick={async () => {
+              if (window.confirm("Are you sure you want to wipe all session and telemetry history? This cannot be undone.")) {
+                try {
+                  const res = await fetch("/api/data", { method: "DELETE" });
+                  if (res.ok) {
+                    alert("Telemetry database successfully wiped to a clean slate.");
+                    fetchStats();
+                  }
+                } catch (e) {
+                  alert("Failed to wipe database");
+                }
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
+            title="Reset telemetry database to a completely blank slate"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
+            <span>Wipe History</span>
+          </button>
+          <button
             onClick={fetchStats}
             disabled={isLoading}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow transition-all active:scale-95 cursor-pointer"

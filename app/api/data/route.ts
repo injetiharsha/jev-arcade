@@ -514,3 +514,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+// DELETE /api/data - Wipe all sessions, games, and telemetry calls for a fresh slate
+export async function DELETE() {
+  try {
+    await db.execute("DELETE FROM jev_calls");
+    await db.execute("DELETE FROM games");
+    await db.execute("DELETE FROM sessions");
+    return NextResponse.json({
+      success: true,
+      message: "All sessions, games, and telemetry history successfully wiped.",
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
