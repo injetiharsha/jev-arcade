@@ -82,26 +82,31 @@ export async function askJev(params: AskJevParams): Promise<AskJevResult> {
     }
 
     if (sessionId) {
-      const sessionRow = await db.queryOne<{
-        mode: string | null;
-        free_calls_used: number | null;
-      }>("SELECT mode, free_calls_used FROM sessions WHERE id = ?", [sessionId]);
+      try {
+        const sessionRow = await db.queryOne<{
+          mode: string | null;
+          free_calls_used: number | null;
+        }>("SELECT mode, free_calls_used FROM sessions WHERE id = ?", [sessionId]);
 
-      const usedCalls = Number(sessionRow?.free_calls_used) || 0;
-      if (usedCalls >= FREE_TIER_CALL_LIMIT) {
-        const err = new Error(
-          `Free trial limit of ${FREE_TIER_CALL_LIMIT} Jev calls reached. Please enter your own TypeSafe API key to continue playing.`
+        const usedCalls = Number(sessionRow?.free_calls_used) || 0;
+        if (usedCalls >= FREE_TIER_CALL_LIMIT) {
+          const err = new Error(
+            `Free trial limit of ${FREE_TIER_CALL_LIMIT} Jev calls reached. Please enter your own TypeSafe API key to continue playing.`
+          );
+          (err as any).statusCode = 403;
+          (err as any).code = "FREE_LIMIT_REACHED";
+          throw err;
+        }
+
+        // Increment free-tier call count
+        await db.execute(
+          "UPDATE sessions SET free_calls_used = COALESCE(free_calls_used, 0) + 1 WHERE id = ?",
+          [sessionId]
         );
-        (err as any).statusCode = 403;
-        (err as any).code = "FREE_LIMIT_REACHED";
-        throw err;
+      } catch (err: any) {
+        if (err?.code === "FREE_LIMIT_REACHED") throw err;
+        console.warn("[Jev Session DB Warning]:", err);
       }
-
-      // Increment free-tier call count
-      await db.execute(
-        "UPDATE sessions SET free_calls_used = COALESCE(free_calls_used, 0) + 1 WHERE id = ?",
-        [sessionId]
-      );
     }
   }
 
